@@ -54,23 +54,16 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        println!("Hi from start. You requested: {}", req.path());
         let mut authenticated = false;
-
         // Verificando se o header authorization foi mandando pelo usuario.
         // Se sim, vai decodificar o usuario e senha e ira setar a variavel
         // booleana authenticated caso a senha e usuario estiverem certo.
-        if req.headers().iter().any(|x| x.0.to_string().eq("authorization"))
-        {
-            for header in req.headers() {
-                if header.0.eq(&header::AUTHORIZATION) {
-                    let credentials = header.1.as_bytes().split(|&x| x == 32).last().unwrap();
-                    let credentials_decoded =
-                        String::from_utf8(base64::decode(credentials).unwrap()).unwrap();
-                    //senha hardcoded
-                    authenticated = credentials_decoded.split(":").all(|x| x.eq("admin"));
-                }
-            }
+        if let Some(auth_header) = req.headers().get(header::AUTHORIZATION) {
+            let credentials = auth_header.as_bytes().split(|&x| x == 32).last().unwrap();
+            let credentials_decoded =
+            String::from_utf8(base64::decode(credentials).unwrap()).unwrap();
+            //senha hardcoded
+            authenticated = credentials_decoded.split(":").all(|x| x.eq("admin"));
         }
 
         let fut = self.service.call(req);
